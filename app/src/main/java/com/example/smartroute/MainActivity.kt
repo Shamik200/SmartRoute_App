@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Parcelable
+import android.util.Log
 import android.widget.Toast
 import kotlinx.parcelize.Parcelize
 import androidx.activity.ComponentActivity
@@ -50,6 +51,7 @@ import com.example.smartroute.ui.theme.SmartRouteTheme
 //import com.google.type.LatLng
 import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -61,11 +63,13 @@ import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
 import org.json.JSONArray
 import org.json.JSONException
+import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
 import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.net.URL
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,7 +97,7 @@ fun MainScreen(innerpadding: PaddingValues){
     var fileName2 by remember { mutableStateOf("No file selected") }
     var fileName3 by remember { mutableStateOf("No file selected") }
 //    var trips by remember { mutableStateOf(listOf<Trip>()) }
-    var trips by remember { mutableStateOf<List<Trip>>(emptyList()) }
+//    var trips by remember { mutableStateOf<List<Trip>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
 
     val filePickerLauncher1 = rememberLauncherForActivityResult(
@@ -118,35 +122,35 @@ fun MainScreen(innerpadding: PaddingValues){
         }
     )
 
-    val filePickerLauncher3 = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri ->
-            uri?.let {
-                fileUri3 = it
-                fileName3 = getFileName(it)
-                // Further file processing logic goes here
-            }
-        }
-    )
-
-//    val trips = listOf(
-//        Trip(
-//            "1",
-//            listOf(
-//                Shipment(1, LatLng(19.076, 72.877), "10:00 AM"),
-//                Shipment(2, LatLng(28.704, 77.102), "12:30 PM")
-//            ),
-//            50.0, 1.5, "Truck", 80.0, 60.0, 75.0
-//        ),
-//        Trip(
-//            "2",
-//            listOf(
-//                Shipment(3, LatLng(28.704, 77.102), "2:00 PM"),
-//                Shipment(4, LatLng(19.076, 72.877), "4:30 PM")
-//            ),
-//            30.0, 1.0, "Van", 70.0, 50.0, 65.0
-//        )
+//    val filePickerLauncher3 = rememberLauncherForActivityResult(
+//        contract = ActivityResultContracts.OpenDocument(),
+//        onResult = { uri ->
+//            uri?.let {
+//                fileUri3 = it
+//                fileName3 = getFileName(it)
+//                // Further file processing logic goes here
+//            }
+//        }
 //    )
+
+    val trips = listOf(
+        Trip(
+            "1",
+            listOf(
+                Shipment(1, LatLng(19.076, 72.877), "10:00 AM"),
+                Shipment(2, LatLng(28.704, 77.102), "12:30 PM")
+            ),
+            50.0, 1.5, "Truck", 80.0, 60.0, 75.0
+        ),
+        Trip(
+            "2",
+            listOf(
+                Shipment(3, LatLng(28.704, 77.102), "2:00 PM"),
+                Shipment(4, LatLng(19.076, 72.877), "4:30 PM")
+            ),
+            30.0, 1.0, "Van", 70.0, 50.0, 65.0
+        )
+    )
 
     Column(
         modifier = Modifier.padding(innerpadding)
@@ -202,8 +206,8 @@ fun MainScreen(innerpadding: PaddingValues){
 
                 Spacer(modifier = Modifier.height(20.dp))
                 //Button Send to Server
-//                Button(
-//                    onClick = {
+                Button(
+                    onClick = {
 //                        if (fileUri1 != null && fileUri2 != null) {
 //                            isLoading = true
 //                            uploadFiles(context, fileUri1!!, fileUri2!!) { tripsList ->
@@ -213,27 +217,27 @@ fun MainScreen(innerpadding: PaddingValues){
 //                        } else {
 //                            Toast.makeText(context, "Please select both files", Toast.LENGTH_SHORT).show()
 //                        }
-//                    }
-//                ) {
-//                    Text(text = "Find Trips")
-//                }
-
-                FileUploadButton(
-                    text = "Select Find Trips File",
-                    fileName = fileName3,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
+                    }
                 ) {
-                    filePickerLauncher3.launch(arrayOf("*/*"))
+                    Text(text = "Find Trips")
                 }
-                trips = fileUri3?.let { parseCSVFromUri(context, it) }!!
+
+//                FileUploadButton(
+//                    text = "Select Find Trips File",
+//                    fileName = fileName3,
+//                    modifier = Modifier
+//                        .weight(1f)
+//                        .fillMaxWidth()
+//                ) {
+//                    filePickerLauncher3.launch(arrayOf("*/*"))
+//                }
+//                trips = fileUri3?.let { parseCSVFromUri(context, it) }!!
             }
         }
 
-        if(isLoading){
-            CircularProgressIndicator(modifier = Modifier.padding(16.dp))
-        } else{
+//        if(isLoading){
+//            CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+//        } else{
             LazyColumn {
                 items(trips) { trip ->
                     TripItem(trip) {
@@ -243,13 +247,69 @@ fun MainScreen(innerpadding: PaddingValues){
                         context.startActivity(intent)
                     }
                 }
-            }
+//            }
         }
     }
 }
 
+// Function to parse CSV data from a Uri
+//fun parseCSVFromUri(context: Context, uri: Uri): List<Trip> {
+//    val trips = mutableListOf<Trip>()
+//    try {
+//        // Open the InputStream from the Uri
+//        val inputStream: InputStream = context.contentResolver.openInputStream(uri)!!
+//        val reader = BufferedReader(InputStreamReader(inputStream))
+//
+//        // Iterate through each line in the CSV file
+//        reader.forEachLine { line ->
+//            // Assuming each line is a trip entry in CSV format
+//            val columns = line.split(",")
+//
+//            // Extract and map data
+//            val tripId = columns[0]
+//            val shipmentsJson = columns[1]  // assuming shipments are in JSON-like format
+//            val mstDistance = columns[2].toDouble()
+//            val tripTime = columns[3].toDouble()
+//            val vehicleType = columns[4]
+//            val capacityUtilization = columns[5].toDouble()
+//            val timeUtilization = columns[6].toDouble()
+//            val coverageUtilization = columns[7].toDouble()
+//
+//            // Deserialize shipments JSON into List<Shipment>
+//            val gson = Gson()
+//            val shipmentType = object : TypeToken<List<Shipment>>() {}.type
+//            val shipments: List<Shipment> = gson.fromJson(shipmentsJson, shipmentType)
+//
+//            // Create Trip object and add to list
+//            val trip = Trip(
+//                tripId,
+//                shipments,
+//                mstDistance,
+//                tripTime,
+//                vehicleType,
+//                capacityUtilization,
+//                timeUtilization,
+//                coverageUtilization
+//            )
+//            trips.add(trip)
+//        }
+//
+//    } catch (e: Exception) {
+//        Log.e("CSV Parsing", "Error parsing CSV from Uri: ${e.message}")
+//    }
+//
+//    return trips
+//}
 
 
+// Function to parse LatLng from a string like "LatLng(12.34, 56.78)"
+//fun parseLatLng(locationStr: String): LatLng {
+//    val regex = """LatLng\(([-+]?[0-9]*\.?[0-9]+),\s*([+-]?[0-9]*\.?[0-9]+)\)""".toRegex()
+//    val matchResult = regex.find(locationStr)
+//    val lat = matchResult?.groups?.get(1)?.value?.toDouble() ?: 0.0
+//    val lng = matchResult?.groups?.get(2)?.value?.toDouble() ?: 0.0
+//    return LatLng(lat, lng)
+//}
 
 
 fun uploadFiles(context: Context, fileUri1: Uri, fileUri2: Uri, onResult: (List<Trip>) -> Unit) {
@@ -340,8 +400,8 @@ fun TripItem(trip: Trip, onClick: () -> Unit) {
 @Parcelize
 data class Trip(
     val tripId: String,
-    val shipments: String,
-    val mstDistance: String,
+    val shipments: List<Shipment>,
+    val mstDistance: Double,
     val tripTime: Double,
     val vehicleType: String,
     val capacityUtilization: Double,
