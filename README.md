@@ -18,9 +18,13 @@ Geospatial Optimization is an advanced routing and clustering system designed to
 <p align="center">
   <img width="30%" height="50%" src="https://github.com/Shamik200/SmartRoute/blob/main/Images/img1.jpg" />
   <img width="30%" height="50%" src="https://github.com/Shamik200/SmartRoute/blob/main/Images/img2.jpg" />
+  <br>
   <img width="30%" height="50%" src="https://github.com/Shamik200/SmartRoute/blob/main/Images/img3.jpg" />
   <img width="30%" height="50%" src="https://github.com/Shamik200/SmartRoute/blob/main/Images/img4.jpg" />
+  <br>
   <img width="30%" height="50%" src="https://github.com/Shamik200/SmartRoute/blob/main/Images/img5.jpg" />
+  <br>
+  <img width="30%" height="50%" src="https://github.com/Shamik200/SmartRoute/blob/main/Images/img6.jpg" />
 </p>
 
 ## Project Layout Structure
